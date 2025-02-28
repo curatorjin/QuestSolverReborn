@@ -3,20 +3,21 @@ using System.Numerics;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using ImGuiNET;
 using Lumina.Excel.Sheets;
+using QuestSolverReborn.Data;
 
-namespace SamplePlugin.Windows;
+namespace QuestSolverReborn.Windows;
 
 public class MainWindow : Window, IDisposable
 {
-    private string GoatImagePath;
     private Plugin Plugin;
 
     // We give this window a hidden ID using ##
     // So that the user will see "My Amazing Window" as window title,
     // but for ImGui the ID is "My Amazing Window##With a hidden ID"
-    public MainWindow(Plugin plugin, string goatImagePath)
+    public MainWindow(Plugin plugin)
         : base("My Amazing Window##With a hidden ID", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
     {
         SizeConstraints = new WindowSizeConstraints
@@ -24,14 +25,13 @@ public class MainWindow : Window, IDisposable
             MinimumSize = new Vector2(375, 330),
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
-
-        GoatImagePath = goatImagePath;
+        
         Plugin = plugin;
     }
 
     public void Dispose() { }
 
-    public override void Draw()
+    public override unsafe void Draw()
     {
         // Do not use .Text() or any other formatted function like TextWrapped(), or SetTooltip().
         // These expect formatting parameter if any part of the text contains a "%", which we can't
@@ -55,18 +55,18 @@ public class MainWindow : Window, IDisposable
             if (child.Success)
             {
                 ImGui.TextUnformatted("Have a goat:");
-                var goatImage = Plugin.TextureProvider.GetFromFile(GoatImagePath).GetWrapOrDefault();
-                if (goatImage != null)
-                {
-                    using (ImRaii.PushIndent(55f))
-                    {
-                        ImGui.Image(goatImage.ImGuiHandle, new Vector2(goatImage.Width, goatImage.Height));
-                    }
-                }
-                else
-                {
-                    ImGui.TextUnformatted("Image not found.");
-                }
+                // var goatImage = Plugin.TextureProvider.GetFromFile(GoatImagePath).GetWrapOrDefault();
+                // if (goatImage != null)
+                // {
+                //     using (ImRaii.PushIndent(55f))
+                //     {
+                //         ImGui.Image(goatImage.ImGuiHandle, new Vector2(goatImage.Width, goatImage.Height));
+                //     }
+                // }
+                // else
+                // {
+                //     ImGui.TextUnformatted("Image not found.");
+                // }
 
                 ImGuiHelpers.ScaledDummy(20.0f);
 
@@ -100,6 +100,35 @@ public class MainWindow : Window, IDisposable
                 {
                     ImGui.TextUnformatted("Invalid territory.");
                 }
+                
+                ImGui.TextUnformatted("人物当前坐标：");
+                ImGui.TextUnformatted("x:" + localPlayer.Position.X);
+                ImGui.TextUnformatted("y:" + localPlayer.Position.Y);
+                ImGui.TextUnformatted("z:" + localPlayer.Position.Z);
+                
+                var quest = Plugin.DataManager.GetExcelSheet<Quest>()
+                                  .GetRow((uint)QuestManager.Instance()->NormalQuests[0].QuestId | 0x10000);
+
+                ImGui.TextUnformatted($"当前主线任务：{quest.Name.ExtractText()}");
+                foreach (var todoParamsStruct in quest.TodoParams)
+                {
+                    foreach (var rowRef in todoParamsStruct.ToDoLocation)
+                    {
+                        if (rowRef.RowId == 0) continue;
+                        var level = rowRef.Value;
+                        var mapRowId = level.Territory.Value.RowId;
+                        if (Plugin.DataManager.GetExcelSheet<TerritoryType>()
+                                  .TryGetRow(mapRowId, out var territoryRowName))
+                        {
+                            ImGui.TextUnformatted($"{territoryRowName.PlaceName.Value.Name.ExtractText()} X: {level.X}; Y:{level.Y}; Z: {level.Z}");
+                        }
+                        else
+                        {
+                            ImGui.TextUnformatted($"未知地图({mapRowId}) X: {level.X}; Y:{level.Y}; Z: {level.Z}");
+                        }
+                    }
+                }
+                
             }
         }
     }

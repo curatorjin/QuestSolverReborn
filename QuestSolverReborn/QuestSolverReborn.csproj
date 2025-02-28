@@ -6,7 +6,9 @@
     <PackageProjectUrl>https://github.com/curatorjin/QuestSolverReborn</PackageProjectUrl>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <IsPackable>false</IsPackable>
-    <RootNamespace>SamplePlugin</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
+    <OutputPath>E:\FFXIV\Plugins\QuestSolverReborn</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,5 +16,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>false</Visible>
     </Content>
+      
   </ItemGroup>
+
 </Project>
